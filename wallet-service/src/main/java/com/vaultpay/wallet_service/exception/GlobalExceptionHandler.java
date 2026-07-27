@@ -1,5 +1,6 @@
 package com.vaultpay.wallet_service.exception;
 
+import com.vaultpay.wallet_service.exception.wallet.InsufficientBalanceException;
 import com.vaultpay.wallet_service.exception.wallet.InvalidAmountException;
 import com.vaultpay.wallet_service.exception.wallet.WalletAlreadyExistException;
 import com.vaultpay.wallet_service.exception.wallet.WalletNotFoundException;
@@ -28,6 +29,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = InvalidAmountException.class)
     public ResponseEntity<ErrorResponse> handleInvalidAmountException(InvalidAmountException exception, HttpServletRequest request){
         ErrorResponse errorResponse = new ErrorResponse(LocalDateTime.now(), HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), exception.getMessage(), request.getRequestURI());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body(errorResponse);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body(errorResponse);
+    }
+    @ExceptionHandler(value = InvalidAmountException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientBalanceException(InsufficientBalanceException exception, HttpServletRequest request){
+        ErrorResponse errorResponse = new ErrorResponse(LocalDateTime.now(), HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), exception.getMessage(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body(errorResponse);
     }
 }
