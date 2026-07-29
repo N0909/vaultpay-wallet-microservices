@@ -106,6 +106,7 @@ public class WalletServiceImplementation implements WalletService {
         if (withdrawRequest.amount().compareTo(BigDecimal.ZERO)<=0){
             throw new InvalidAmountException("Withdraw amount must be greater than zero.");
         }
+
         Wallet userWallet = walletRepository
                             .findByUserId(userId).orElseThrow(
                                     ()->new WalletNotFoundException("Wallet not found.")
