@@ -1,9 +1,6 @@
 package com.vaultpay.wallet_service.exception;
 
-import com.vaultpay.wallet_service.exception.wallet.InsufficientBalanceException;
-import com.vaultpay.wallet_service.exception.wallet.InvalidAmountException;
-import com.vaultpay.wallet_service.exception.wallet.WalletAlreadyExistException;
-import com.vaultpay.wallet_service.exception.wallet.WalletNotFoundException;
+import com.vaultpay.wallet_service.exception.wallet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
@@ -33,6 +30,11 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(value = InvalidAmountException.class)
     public ResponseEntity<ErrorResponse> handleInsufficientBalanceException(InsufficientBalanceException exception, HttpServletRequest request){
+        ErrorResponse errorResponse = new ErrorResponse(LocalDateTime.now(), HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), exception.getMessage(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body(errorResponse);
+    }
+    @ExceptionHandler(value = SelfTransferNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleSelfTransferNotAllowedException(SelfTransferNotAllowedException exception, HttpServletRequest request){
         ErrorResponse errorResponse = new ErrorResponse(LocalDateTime.now(), HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), exception.getMessage(), request.getRequestURI());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON).body(errorResponse);
     }

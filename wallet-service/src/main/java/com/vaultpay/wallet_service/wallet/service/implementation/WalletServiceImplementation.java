@@ -138,4 +138,64 @@ public class WalletServiceImplementation implements WalletService {
                 updatedUserWallet.getCreatedAt()
         );
     }
+    @Transactional
+    public TransferResponse transfer(TransferRequest transferRequest, String senderId, String receiverId){
+        if (transferRequest.amount().compareTo(BigDecimal.ZERO)<=0){
+            throw new InvalidAmountException("Withdraw amount must be greater than zero.");
+        }
+
+        if (senderId.equals(receiverId)){
+            throw new SelfTransferNotAllowedException("Cannot transfer money to the same wallet.");
+        }
+
+        Wallet senderWallet = walletRepository
+                            .findByUserId(senderId)
+                            .orElseThrow(
+                                    ()->new WalletNotFoundException("Sender Wallet not found.")
+                            );
+
+        Wallet receiverWallet = walletRepository
+                .findByUserId(receiverId)
+                .orElseThrow(
+                        ()->new WalletNotFoundException("Receiver Wallet not found.")
+                );
+
+        if (senderWallet.getStatus().equals(WalletStatus.CLOSED)){
+            throw new WalletClosedException("Sender Wallet is closed");
+        }
+
+        if (senderWallet.getStatus().equals(WalletStatus.FROZEN)){
+            throw new WalletFrozenException("Sender Wallet is frozen");
+        }
+
+        if (senderWallet.getBalance().compareTo(transferRequest.amount())<0){
+            throw new InvalidAmountException("Insufficient Balance.");
+        }
+
+        if (receiverWallet.getStatus().equals(WalletStatus.CLOSED)){
+            throw new WalletClosedException("Receiver Wallet is closed.");
+        }
+
+        if (receiverWallet.getStatus().equals(WalletStatus.FROZEN)){
+            throw new WalletFrozenException("Receiver Wallet is frozen.");
+        }
+
+        senderWallet.setBalance(senderWallet.getBalance().subtract(transferRequest.amount()));
+        receiverWallet.setBalance(receiverWallet.getBalance().add(transferRequest.amount()));
+
+        senderWallet.setUpdatedAt(LocalDateTime.now());
+        receiverWallet.setUpdatedAt(LocalDateTime.now());
+
+        walletRepository.save(senderWallet);
+        walletRepository.save(receiverWallet);
+
+        return new TransferResponse(
+                senderWallet.getWalletId(),
+                senderWallet.getBalance(),
+                receiverWallet.getWalletId(),
+                receiverWallet.getBalance(),
+                transferRequest.amount()
+        );
+    }
+
 }
