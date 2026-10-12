@@ -29,5 +29,8 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+# JWT Keys
+src/main/resources/keys/
+
 ### VS Code ###
 .vscode/
