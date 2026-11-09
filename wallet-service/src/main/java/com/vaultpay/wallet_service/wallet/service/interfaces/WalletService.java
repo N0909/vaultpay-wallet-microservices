@@ -10,5 +10,5 @@ public interface WalletService {
     WalletResponse deposit(DepositRequest depositRequest, String userId);
     WalletResponse withdraw(WithdrawRequest withdrawRequest, String userId);
 
-    TransferResponse transfer(TransferRequest transferRequest, String senderId, String receiverId);
+    TransferResponse transfer(TransferRequest transferRequest, String senderId);
 }

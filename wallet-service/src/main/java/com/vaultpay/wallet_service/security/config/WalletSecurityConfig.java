@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -30,19 +31,19 @@ import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class WalletSecurityConfig {
-    @Value("jwt.public-key")
-    private String publicKeyPath;
-    private final ResourceLoader resourceLoader;
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     public WalletSecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, ResourceLoader resourceLoader){
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.resourceLoader = resourceLoader;
+
     }
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception{
-        httpSecurity.
-                sessionManagement(session ->
+        httpSecurity
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(request->
@@ -50,32 +51,5 @@ public class WalletSecurityConfig {
         ).formLogin(AbstractHttpConfigurer::disable);
 
         return httpSecurity.build();
-    }
-
-    @Bean
-    public PublicKey publicKey() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-        Resource resource = resourceLoader.getResource(publicKeyPath);
-
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(
-                        resource.getInputStream(),
-                        StandardCharsets.UTF_8
-                ))) {
-
-            String fileContent = reader.lines()
-                    .collect(Collectors.joining("\n"));
-
-            fileContent = fileContent
-                    .replaceAll(
-                            "-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----",
-                            ""
-                    )
-                    .replaceAll("\\s+", "");
-
-            byte[] decoded = Base64.getDecoder().decode(fileContent);
-
-            return KeyFactory.getInstance("RSA")
-                    .generatePublic(new X509EncodedKeySpec(decoded));
-        }
     }
 }

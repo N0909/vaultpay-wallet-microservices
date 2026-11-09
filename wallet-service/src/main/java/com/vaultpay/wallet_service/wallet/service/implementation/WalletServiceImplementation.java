@@ -10,24 +10,24 @@ import org.springframework.stereotype.Service;
 import com.vaultpay.wallet_service.wallet.service.interfaces.WalletService;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static tools.jackson.databind.type.LogicalType.DateTime;
 
 @Service
 public class WalletServiceImplementation implements WalletService {
     private final WalletRepository walletRepository;
-    private final WalletService walletService;
-
-    public WalletServiceImplementation(WalletRepository walletRepository, WalletService walletService){
+    public WalletServiceImplementation(WalletRepository walletRepository){
         this.walletRepository = walletRepository;
-        this.walletService = walletService;
     }
 
     @Transactional
     public WalletResponse createWallet(String userId){
 
-        boolean existWallet = walletRepository.existsByUserId(userId);
+        boolean existWallet = walletRepository.existsByUserId(UUID.fromString(userId));
 
         if (existWallet){
             throw new WalletAlreadyExistException("Wallet already exists.");
@@ -35,13 +35,13 @@ public class WalletServiceImplementation implements WalletService {
 
         Wallet wallet = new Wallet();
 
-        wallet.setUserId(userId);
+        wallet.setUserId(UUID.fromString(userId));
         wallet.setCurrency(WalletCurrency.INR);
         wallet.setStatus(WalletStatus.ACTIVE);
         wallet.setBalance(BigDecimal.ZERO);
 
         try {
-            Wallet createdWallet = walletRepository.save(wallet);
+            Wallet createdWallet = walletRepository.saveAndFlush(wallet);
 
             return new WalletResponse(createdWallet.getWalletId(),
                                       createdWallet.getBalance(),
@@ -57,7 +57,7 @@ public class WalletServiceImplementation implements WalletService {
 
     public WalletResponse getMyWallet(String userId){
         Wallet fetchedWallet = walletRepository
-                                .findByUserId(userId).orElseThrow(
+                                .findByUserId(UUID.fromString(userId)).orElseThrow(
                                         ()->new WalletNotFoundException("Wallet not found.")
                                 );
 
@@ -75,7 +75,7 @@ public class WalletServiceImplementation implements WalletService {
             throw new InvalidAmountException("Deposit amount must be greater than zero.");
         }
 
-        Wallet userWallet = walletRepository.findByUserId(userId).orElseThrow(
+        Wallet userWallet = walletRepository.findByUserId(UUID.fromString(userId)).orElseThrow(
                 ()->new WalletNotFoundException("Wallet not found.")
         );
 
@@ -108,7 +108,7 @@ public class WalletServiceImplementation implements WalletService {
         }
 
         Wallet userWallet = walletRepository
-                            .findByUserId(userId).orElseThrow(
+                            .findByUserId(UUID.fromString(userId)).orElseThrow(
                                     ()->new WalletNotFoundException("Wallet not found.")
                             );
 
@@ -139,23 +139,23 @@ public class WalletServiceImplementation implements WalletService {
         );
     }
     @Transactional
-    public TransferResponse transfer(TransferRequest transferRequest, String senderId, String receiverId){
+    public TransferResponse transfer(TransferRequest transferRequest, String senderId){
         if (transferRequest.amount().compareTo(BigDecimal.ZERO)<=0){
             throw new InvalidAmountException("Withdraw amount must be greater than zero.");
         }
 
-        if (senderId.equals(receiverId)){
+        if (senderId.equals(transferRequest.receiverId())){
             throw new SelfTransferNotAllowedException("Cannot transfer money to the same wallet.");
         }
 
         Wallet senderWallet = walletRepository
-                            .findByUserId(senderId)
+                            .findByUserId(UUID.fromString(senderId))
                             .orElseThrow(
                                     ()->new WalletNotFoundException("Sender Wallet not found.")
                             );
 
         Wallet receiverWallet = walletRepository
-                .findByUserId(receiverId)
+                .findByUserId(UUID.fromString(transferRequest.receiverId()))
                 .orElseThrow(
                         ()->new WalletNotFoundException("Receiver Wallet not found.")
                 );
@@ -191,10 +191,9 @@ public class WalletServiceImplementation implements WalletService {
 
         return new TransferResponse(
                 senderWallet.getWalletId(),
-                senderWallet.getBalance(),
-                receiverWallet.getWalletId(),
-                receiverWallet.getBalance(),
-                transferRequest.amount()
+                transferRequest.amount(),
+                WalletCurrency.INR,
+                Instant.now()
         );
     }
 

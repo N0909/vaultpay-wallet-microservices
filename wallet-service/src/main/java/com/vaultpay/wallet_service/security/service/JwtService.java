@@ -3,14 +3,8 @@ package com.vaultpay.wallet_service.security.service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
-import org.flywaydb.core.internal.util.DateUtils;
 import org.springframework.stereotype.Service;
-
-import javax.crypto.SecretKey;
 import java.security.PublicKey;
-import java.time.LocalDateTime;
 import java.util.Date;
 
 @Service
@@ -39,6 +33,10 @@ public class JwtService {
     public boolean verifyToken(String token){
         try{
             Claims claims = this.getAllClaims(token);
+
+            if (claims.getExpiration()==null){
+                return false;
+            }
 
             return !claims.getExpiration().before(new Date());
         }catch (JwtException jwtException){
